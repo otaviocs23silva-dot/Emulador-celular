@@ -1,16 +1,916 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Snake</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexBind - FPS Keymapper & Macro Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gamer: {
+                            900: '#090d16',
+                            800: '#111827',
+                            700: '#1f293d',
+                            600: '#374151',
+                            accent: '#10b981', // Emerald gaming glow
+                            accentHover: '#059669',
+                            purple: '#8b5cf6',
+                            cyan: '#06b6d4',
+                            rose: '#f43f5e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Rajdhani for FPS vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .fps-font {
+            font-family: 'Rajdhani', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f293d;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+        }
+        .neon-glow-rose {
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.2);
+        }
+    </style>
 </head>
-<body>
-  <canvas id="canvas"></canvas>
-  <script src="render.js"></script><!-- defines canvas, ctx, draw() -->
-  <script src="input.js"></script><!-- attaches keyboard + touch listeners -->
-  <script src="game.js"></script> <!-- state, loop, boot -->
+<body class="bg-gamer-900 text-slate-100 min-h-screen flex flex-col selection:bg-gamer-accent selection:text-slate-900">
 
+    <!-- Top Navigation & FPS Header -->
+    <header class="bg-gamer-800 border-b border-gamer-700/80 sticky top-0 z-30 px-4 md:px-8 py-3.5 flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
+        <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-start">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-emerald-600 to-cyan-500 p-2.5 rounded-xl shadow-lg shadow-emerald-500/20 text-slate-950 font-bold">
+                    <i class="fa-solid fa-crosshairs text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="fps-font font-bold text-xl tracking-wider uppercase bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">ApexBind <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">FPS PRO</span></h1>
+                    <p class="text-xs text-slate-400">Low-Latency Keymapper, Rapid-Fire & Macro Suite</p>
+                </div>
+            </div>
+            <!-- Mobile Toggle -->
+            <button onclick="toggleEngine()" class="md:hidden flex items-center space-x-1.5 bg-gamer-900 px-3 py-1.5 rounded-lg border border-gamer-700 text-xs font-semibold">
+                <span id="mobileStatusIndicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="mobileStatusText" class="text-emerald-400">ACTIVE</span>
+            </button>
+        </div>
+
+        <!-- FPS Game Preset Selector -->
+        <div class="flex items-center space-x-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+            <span class="text-xs font-semibold text-slate-400 whitespace-nowrap uppercase tracking-wider">Preset:</span>
+            <select id="gamePresetSelect" onchange="loadGamePreset(this.value)" class="bg-gamer-900 border border-gamer-700 rounded-xl px-3 py-1.5 text-xs font-medium text-emerald-300 focus:outline-none focus:border-emerald-500 cursor-pointer">
+                <option value="custom">⚡ Custom Profile</option>
+                <option value="cs2">🎯 CS2 / CS:GO (Pro Setup)</option>
+                <option value="valorant">🛡️ Valorant (Optimal Utility)</option>
+                <option value="apex">🚀 Apex Legends (Movement/B-Hop)</option>
+                <option value="cod">🔥 Call of Duty (Rapid Fire)</option>
+                <option value="fortnite">🏗️ Fortnite (Quick Edit)</option>
+            </select>
+        </div>
+
+        <!-- Master Switch & Actions -->
+        <div class="hidden md:flex items-center space-x-4">
+            <div class="flex items-center space-x-2 bg-gamer-900 px-3 py-1.5 rounded-full border border-gamer-700">
+                <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Engine:</span>
+                <button id="masterToggle" onclick="toggleEngine()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-emerald-500 shadow-inner">
+                    <span id="toggleKnob" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6 shadow-sm"></span>
+                </button>
+                <span id="toggleText" class="text-xs font-semibold text-emerald-400 w-14">ACTIVE</span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <label class="cursor-pointer bg-gamer-700 hover:bg-gamer-600 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 border border-gamer-600">
+                    <i class="fa-solid fa-file-arrow-down text-emerald-400"></i>
+                    <span>Import</span>
+                    <input type="file" id="importFile" accept=".json" class="hidden" onchange="importProfile(event)">
+                </label>
+                <button onclick="exportProfile()" class="bg-gamer-700 hover:bg-gamer-600 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 border border-gamer-600">
+                    <i class="fa-solid fa-file-arrow-up text-cyan-400"></i>
+                    <span>Export</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left 2 Columns: FPS Keyboard & Mouse Visualizer + Mappings -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- FPS HUD Virtual Keyboard & Mouse -->
+            <section class="bg-gamer-800 rounded-2xl border border-gamer-700 p-5 shadow-xl relative overflow-hidden neon-glow">
+                <div class="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <i class="fa-solid fa-gamepad text-9xl text-white"></i>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <div>
+                        <h2 class="fps-font font-bold text-lg text-slate-100 flex items-center space-x-2 tracking-wide">
+                            <i class="fa-solid fa-display text-emerald-400"></i>
+                            <span>FPS Hardware Inspector & HUD</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Live visualization of WASD, mouse buttons, and triggers. Click any key to map.</p>
+                    </div>
+                    <div id="lastPressedDisplay" class="bg-gamer-900 border border-gamer-700 px-3 py-1.5 rounded-lg text-xs code-font text-emerald-300 flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Input: <strong id="lastKeyText" class="text-white">None</strong></span>
+                    </div>
+                </div>
+
+                <!-- Keyboard & Mouse Layout Container -->
+                <div class="grid grid-cols-1 xl:grid-cols-4 gap-4 items-center">
+                    
+                    <!-- Keyboard Compact FPS Zone (WASD & surrounding) -->
+                    <div class="xl:col-span-3 overflow-x-auto pb-2 select-none" id="virtualKeyboard">
+                        <!-- Rendered via JS -->
+                    </div>
+
+                    <!-- Mouse Visualizer Side Widget -->
+                    <div class="xl:col-span-1 bg-gamer-900/80 border border-gamer-700 rounded-xl p-3 flex flex-col items-center justify-center select-none">
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Mouse Binds</div>
+                        <div class="relative w-28 h-36 bg-gamer-800 border-2 border-gamer-600 rounded-2xl flex flex-col justify-between p-2 shadow-inner">
+                            <!-- Mouse top buttons -->
+                            <div class="grid grid-cols-2 gap-1 h-12">
+                                <button id="mouse-LeftClick" onclick="handleVirtualKeyClick('LeftClick')" class="bg-gamer-700 hover:bg-gamer-600 border border-gamer-600 rounded-lg text-[10px] font-bold text-slate-300 flex items-center justify-center transition">L-Click</button>
+                                <button id="mouse-RightClick" onclick="handleVirtualKeyClick('RightClick')" class="bg-gamer-700 hover:bg-gamer-600 border border-gamer-600 rounded-lg text-[10px] font-bold text-slate-300 flex items-center justify-center transition">R-Click</button>
+                            </div>
+                            <!-- Scroll wheel -->
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-gamer-700 rounded-full border border-gamer-600 flex items-center justify-center">
+                                <button id="mouse-WheelClick" onclick="handleVirtualKeyClick('WheelClick')" class="w-2 h-4 bg-emerald-500/50 rounded-full hover:bg-emerald-400 transition" title="Scroll Wheel"></button>
+                            </div>
+                            <!-- Side thumb buttons -->
+                            <div class="absolute left-0 top-14 -translate-x-3 space-y-1">
+                                <button id="mouse-SideButton1" onclick="handleVirtualKeyClick('SideButton1')" class="w-3 h-7 bg-gamer-700 hover:bg-emerald-600 rounded-l border border-gamer-600 text-[8px] flex items-center justify-center text-slate-300 transition" title="Side Button 1">4</button>
+                                <button id="mouse-SideButton2" onclick="handleVirtualKeyClick('SideButton2')" class="w-3 h-7 bg-gamer-700 hover:bg-emerald-600 rounded-l border border-gamer-600 text-[8px] flex items-center justify-center text-slate-300 transition" title="Side Button 2">5</button>
+                            </div>
+                            <div class="text-center text-[10px] text-slate-500 mt-auto">Scroll & Side</div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 border-t border-gamer-700/60 pt-3">
+                    <div class="flex items-center space-x-4">
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded bg-gamer-700 border border-gamer-600 inline-block"></span><span>Standard</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded bg-emerald-600/30 border border-emerald-500 inline-block"></span><span>FPS Bound / Macro</span></span>
+                        <span class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded bg-rose-500/30 border border-rose-500 inline-block"></span><span>Rapid-Fire Active</span></span>
+                    </div>
+                    <button onclick="resetKeyHighlights()" class="text-emerald-400 hover:text-emerald-300 font-medium transition">Reset Highlights</button>
+                </div>
+            </section>
+
+            <!-- Key & Macro Mappings List Section -->
+            <section class="bg-gamer-800 rounded-2xl border border-gamer-700 p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="fps-font font-bold text-lg text-slate-100 flex items-center space-x-2 tracking-wide">
+                            <i class="fa-solid fa-sliders text-cyan-400"></i>
+                            <span>Active FPS Binds & Macros</span>
+                        </h2>
+                        <p class="text-xs text-slate-400">Configure rapid-fire toggles, crouch spam, bunny hop helpers, and key swaps.</p>
+                    </div>
+                    <button onclick="openAddModal()" class="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow-lg shadow-emerald-600/30 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Mapping</span>
+                    </button>
+                </div>
+
+                <!-- Mappings Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gamer-700 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                <th class="py-3 px-3">Input Trigger</th>
+                                <th class="py-3 px-3">Type</th>
+                                <th class="py-3 px-3">Output / Macro Details</th>
+                                <th class="py-3 px-3 text-center">Status</th>
+                                <th class="py-3 px-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mappingsTableBody" class="divide-y divide-gamer-700/50 text-sm">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyMappingsState" class="hidden text-center py-10">
+                    <div class="inline-flex p-4 rounded-full bg-gamer-900 border border-gamer-700 text-slate-500 mb-3">
+                        <i class="fa-solid fa-crosshairs text-2xl"></i>
+                    </div>
+                    <p class="text-slate-300 font-medium text-sm">No custom FPS bindings active</p>
+                    <p class="text-xs text-slate-500 mt-1">Select a game preset above or click "Add Mapping" to configure your hardware.</p>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Right Column: Rapid-Fire Control, FPS Test Sandbox & Event Log -->
+        <div class="space-y-6">
+            
+            <!-- Rapid Fire / Auto-Clicker Turbo Module -->
+            <section class="bg-gamer-800 rounded-2xl border border-gamer-700 p-5 shadow-xl">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="fps-font font-bold text-base text-slate-100 flex items-center space-x-2 tracking-wide">
+                        <i class="fa-solid fa-bolt text-amber-400"></i>
+                        <span>Rapid-Fire / Turbo Engine</span>
+                    </h2>
+                    <button id="rapidFireMaster" onclick="toggleRapidFireEngine()" class="bg-gamer-700 hover:bg-gamer-600 text-slate-200 px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-gamer-600">OFF</button>
+                </div>
+                <p class="text-xs text-slate-400 mb-4">Turn any semi-automatic weapon into full-auto by spamming clicks at custom Hz.</p>
+                
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-xs font-semibold text-slate-300 mb-1">
+                            <span>Fire Rate (Clicks per Second):</span>
+                            <span id="hzValue" class="text-emerald-400">15 CPS</span>
+                        </div>
+                        <input type="range" id="rapidFireRate" min="5" max="30" value="15" oninput="updateRapidFireRate(this.value)" class="w-full accent-emerald-500 bg-gamer-900 cursor-pointer">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Target Turbo Key / Mouse Button</label>
+                        <select id="rapidFireKey" class="w-full bg-gamer-900 border border-gamer-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            <option value="LeftClick">Mouse Left Click (Semi-Auto Gun)</option>
+                            <option value="KeyB">Key B (Buy / Inspect)</option>
+                            <option value="KeyF">Key F (Interact / Use)</option>
+                            <option value="Space">Spacebar (Bunny Hop / Crouch)</option>
+                        </select>
+                    </div>
+
+                    <div class="bg-gamer-900/80 border border-gamer-700 rounded-xl p-3 text-xs text-slate-400 flex items-center justify-between">
+                        <span>Hold Key to Turbo-Fire:</span>
+                        <span id="turboStatus" class="font-bold text-slate-500 uppercase">Idle</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FPS Practice Aim / Key Test Sandbox -->
+            <section class="bg-gamer-800 rounded-2xl border border-gamer-700 p-5 shadow-xl flex flex-col h-[280px]">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="fps-font font-bold text-base text-slate-100 flex items-center space-x-2 tracking-wide">
+                        <i class="fa-solid fa-bullseye text-emerald-400"></i>
+                        <span>FPS Aim & Bind Test Arena</span>
+                    </h2>
+                    <button onclick="clearSandbox()" class="text-xs text-slate-400 hover:text-white bg-gamer-700 hover:bg-gamer-600 px-2 py-1 rounded-lg transition">Clear</button>
+                </div>
+                <p class="text-xs text-slate-400 mb-2">Test your keybinds and macros in real-time response mode.</p>
+                
+                <div class="flex-1 flex flex-col relative">
+                    <textarea id="sandboxInput" placeholder="Click here and press keys (e.g. WASD, Mouse Clicks, Rapid-Fire) to test your binds..." class="w-full flex-1 bg-gamer-900 border border-gamer-700 rounded-xl p-3 text-slate-100 placeholder-slate-600 code-font text-xs focus:outline-none focus:border-emerald-500 transition resize-none shadow-inner"></textarea>
+                    <div class="absolute bottom-3 right-3 text-[10px] text-emerald-400 bg-gamer-800 px-2 py-0.5 rounded border border-gamer-700 pointer-events-none font-semibold">
+                        FPS Input Active
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-time Event Logger -->
+            <section class="bg-gamer-800 rounded-2xl border border-gamer-700 p-5 shadow-xl flex flex-col h-[260px]">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="fps-font font-bold text-base text-slate-100 flex items-center space-x-2 tracking-wide">
+                        <i class="fa-solid fa-terminal text-cyan-400"></i>
+                        <span>Event Telemetry Log</span>
+                    </h2>
+                    <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-white bg-gamer-700 hover:bg-gamer-600 px-2 py-1 rounded-lg transition">Clear Log</button>
+                </div>
+                
+                <div id="eventLogContainer" class="flex-1 bg-gamer-900 border border-gamer-700 rounded-xl p-3 code-font text-[11px] overflow-y-auto space-y-1.5 shadow-inner">
+                    <div class="text-slate-600 italic">// Telemetry ready. Press keys or fire macros...</div>
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-gamer-700 py-4 text-center text-xs text-slate-500">
+        ApexBind FPS Keymapper Studio &bull; Optimized for Low Latency Gaming
+    </footer>
+
+    <!-- Add / Edit Mapping Modal -->
+    <div id="mappingModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-gamer-800 border border-gamer-700 rounded-2xl max-w-md w-full p-6 shadow-2xl transform scale-95 transition-transform duration-300" id="modalCard">
+            <div class="flex items-center justify-between mb-4 border-b border-gamer-700 pb-3">
+                <h3 id="modalTitle" class="fps-font font-bold text-lg text-white flex items-center space-x-2 tracking-wide">
+                    <i class="fa-solid fa-bolt text-emerald-400"></i>
+                    <span>Configure FPS Key Mapping</span>
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <form id="mappingForm" onsubmit="saveMapping(event)" class="space-y-4">
+                <input type="hidden" id="editMappingId">
+                
+                <!-- Original Key / Button Trigger -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Trigger Input (Key or Mouse Button)</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="inputOriginalKey" required placeholder="e.g. KeyQ, LeftClick, Space" class="flex-1 bg-gamer-900 border border-gamer-700 rounded-xl px-3.5 py-2.5 text-sm text-white code-font focus:outline-none focus:border-emerald-500">
+                        <button type="button" onclick="startCapturingKey()" id="captureBtn" class="bg-gamer-700 hover:bg-gamer-600 text-emerald-300 px-3.5 py-2.5 rounded-xl text-xs font-semibold border border-gamer-600 transition flex items-center space-x-1">
+                            <i class="fa-solid fa-crosshairs"></i>
+                            <span>Capture</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Type -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">FPS Action Type</label>
+                    <select id="inputActionType" onchange="onActionTypeChange()" class="w-full bg-gamer-900 border border-gamer-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                        <option value="key">Remap to Another Key</option>
+                        <option value="macro">Text / Chat Macro</option>
+                        <option value="rapid">Rapid Fire Turbo (Hold to spam)</option>
+                        <option value="bhop">Bunny Hop / Crouch Spam Helper</option>
+                    </select>
+                </div>
+
+                <!-- Target Output -->
+                <div>
+                    <label id="targetLabel" class="block text-xs font-semibold text-slate-300 mb-1">Target Output / Key</label>
+                    <input type="text" id="inputTargetValue" required placeholder="e.g. KeyC or LeftClick" class="w-full bg-gamer-900 border border-gamer-700 rounded-xl px-3.5 py-2.5 text-sm text-white code-font focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Description / Game Context</label>
+                    <input type="text" id="inputDescription" placeholder="e.g. Quick knife switch / Fast Crouch" class="w-full bg-gamer-900 border border-gamer-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500">
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex items-center justify-end space-x-3 pt-3 border-t border-gamer-700">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-medium bg-gamer-700 hover:bg-gamer-600 text-slate-300 transition">Cancel</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-600/30 transition">Save Mapping</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+    <!-- Application Script -->
+    <script>
+        // --- State & Presets ---
+        let isEngineActive = true;
+        let isCapturing = false;
+        let rapidFireActive = false;
+        let rapidFireHz = 15;
+        let rapidFireInterval = null;
+
+        const presets = {
+            custom: [],
+            cs2: [
+                { id: 'cs1', original: 'KeyQ', type: 'key', target: 'KeyE', desc: 'Quick switch knife/weapon', enabled: true },
+                { id: 'cs2', original: 'Mouse4', type: 'macro', target: 'use weapon_flashbang', desc: 'Instant Flashbang thumb bind', enabled: true },
+                { id: 'cs3', original: 'Space', type: 'bhop', target: 'Space', desc: 'Bunny Hop wheel/space helper', enabled: true }
+            ],
+            valorant: [
+                { id: 'val1', original: 'Mouse4', type: 'key', target: 'KeyQ', desc: 'Thumb button ability 1', enabled: true },
+                { id: 'val2', original: 'Mouse5', type: 'key', target: 'KeyE', desc: 'Thumb button ability 2', enabled: true },
+                { id: 'val3', original: 'KeyF', type: 'rapid', target: 'LeftClick', desc: 'Rapid pistol fire macro', enabled: true }
+            ],
+            apex: [
+                { id: 'apex1', original: 'Space', type: 'bhop', target: 'KeyC', desc: 'Apex Crouch/Slide & Jump chain', enabled: true },
+                { id: 'apex2', original: 'Mouse4', type: 'key', target: 'KeyQ', desc: 'Tactical ability thumb bind', enabled: true }
+            ],
+            cod: [
+                { id: 'cod1', original: 'LeftClick', type: 'rapid', target: 'LeftClick', desc: 'Semi-auto rifle rapid fire turbo', enabled: true },
+                { id: 'cod2', original: 'KeyV', type: 'key', target: 'KeyC', desc: 'Instant melee rebind', enabled: true }
+            ],
+            fortnite: [
+                { id: 'fn1', original: 'Mouse4', type: 'key', target: 'KeyQ', desc: 'Build Wall thumb bind', enabled: true },
+                { id: 'fn2', original: 'Mouse5', type: 'key', target: 'KeyF', desc: 'Build Ramp thumb bind', enabled: true }
+            ]
+        };
+
+        let mappings = [...presets.cs2]; // Default to CS2 pro setup
+
+        // Compact FPS Keyboard Layout (WASD Zone + numbers & quick keys)
+        const fpsKeyboardLayout = [
+            [
+                { code: 'Escape', label: 'Esc', w: 1 }, { code: 'Digit1', label: '1', w: 1 }, { code: 'Digit2', label: '2', w: 1 }, { code: 'Digit3', label: '3', w: 1 },
+                { code: 'Digit4', label: '4', w: 1 }, { code: 'Digit5', label: '5', w: 1 }, { code: 'KeyB', label: 'B', w: 1 }
+            ],
+            [
+                { code: 'Tab', label: 'Tab', w: 1.5 }, { code: 'KeyQ', label: 'Q', w: 1 }, { code: 'KeyW', label: 'W', w: 1 }, { code: 'KeyE', label: 'E', w: 1 }, { code: 'KeyR', label: 'R', w: 1 }, { code: 'KeyT', label: 'T', w: 1 }
+            ],
+            [
+                { code: 'CapsLock', label: 'Caps', w: 1.8 }, { code: 'KeyA', label: 'A', w: 1 }, { code: 'KeyS', label: 'S', w: 1 }, { code: 'KeyD', label: 'D', w: 1 }, { code: 'KeyF', label: 'F', w: 1 }, { code: 'KeyG', label: 'G', w: 1 }
+            ],
+            [
+                { code: 'ShiftLeft', label: 'Shift', w: 2.2 }, { code: 'KeyZ', label: 'Z', w: 1 }, { code: 'KeyX', label: 'X', w: 1 }, { code: 'KeyC', label: 'C', w: 1 }, { code: 'KeyV', label: 'V', w: 1 }
+            ],
+            [
+                { code: 'ControlLeft', label: 'Ctrl', w: 1.5 }, { code: 'Space', label: 'Spacebar', w: 5.5 }
+            ]
+        ];
+
+        // --- Initialization ---
+        window.addEventListener('DOMContentLoaded', () => {
+            renderKeyboard();
+            renderMappingsTable();
+            setupGlobalListeners();
+            logEvent('ApexBind FPS Engine online. Ready for combat.');
+        });
+
+        // --- Render Keyboard ---
+        function renderKeyboard() {
+            const container = document.getElementById('virtualKeyboard');
+            container.innerHTML = '';
+
+            const mappedKeysSet = new Set(mappings.filter(m => m.enabled).map(m => m.original.toUpperCase()));
+
+            fpsKeyboardLayout.forEach(row => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'flex justify-start space-x-1.5 mb-1.5';
+
+                row.forEach(key => {
+                    const keyBtn = document.createElement('button');
+                    keyBtn.type = 'button';
+                    keyBtn.id = `vkey-${key.code}`;
+                    
+                    let widthClass = 'w-10';
+                    if (key.w >= 5) widthClass = 'w-56';
+                    else if (key.w >= 2) widthClass = 'w-20';
+                    else if (key.w >= 1.5) widthClass = 'w-16';
+
+                    const hasMapping = mappedKeysSet.has(key.code.toUpperCase());
+                    let bgStyle = 'bg-gamer-900 border-gamer-700 text-slate-300 hover:bg-gamer-700';
+                    if (hasMapping) {
+                        bgStyle = 'bg-emerald-600/20 border-emerald-500/50 text-emerald-200 hover:bg-emerald-600/30';
+                    }
+
+                    keyBtn.className = `h-10 ${widthClass} rounded-lg border ${bgStyle} text-xs font-mono font-medium flex items-center justify-center transition shadow-sm cursor-pointer select-none`;
+                    keyBtn.textContent = key.label;
+                    keyBtn.onclick = () => handleVirtualKeyClick(key.code);
+
+                    rowDiv.appendChild(keyBtn);
+                });
+
+                container.appendChild(rowDiv);
+            });
+        }
+
+        // --- Render Mappings Table ---
+        function renderMappingsTable() {
+            const tbody = document.getElementById('mappingsTableBody');
+            const emptyState = document.getElementById('emptyMappingsState');
+            tbody.innerHTML = '';
+
+            if (mappings.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            mappings.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gamer-700/30 transition';
+
+                let typeBadge = '';
+                if (m.type === 'key') typeBadge = '<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-0.5 rounded text-[11px] font-semibold">Key Remap</span>';
+                else if (m.type === 'macro') typeBadge = '<span class="bg-violet-500/10 text-violet-400 border border-violet-500/20 px-2.5 py-0.5 rounded text-[11px] font-semibold">Chat Macro</span>';
+                else if (m.type === 'rapid') typeBadge = '<span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded text-[11px] font-semibold">Rapid Fire Turbo</span>';
+                else if (m.type === 'bhop') typeBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded text-[11px] font-semibold">Bunny Hop / Crouch</span>';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3">
+                        <div class="code-font font-semibold text-slate-200 bg-gamer-900 px-2 py-1 rounded border border-gamer-700 inline-block">${escapeHtml(m.original)}</div>
+                        ${m.desc ? `<div class="text-[11px] text-slate-400 mt-0.5">${escapeHtml(m.desc)}</div>` : ''}
+                    </td>
+                    <td class="py-3 px-3">${typeBadge}</td>
+                    <td class="py-3 px-3 code-font text-xs text-emerald-300 max-w-xs truncate">${escapeHtml(m.target)}</td>
+                    <td class="py-3 px-3 text-center">
+                        <button onclick="toggleMappingStatus('${m.id}')" class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${m.enabled ? 'bg-emerald-500' : 'bg-gamer-600'}">
+                            <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${m.enabled ? 'translate-x-4' : 'translate-x-1'} shadow-sm"></span>
+                        </button>
+                    </td>
+                    <td class="py-3 px-3 text-right space-x-1">
+                        <button onclick="editMapping('${m.id}')" class="p-1.5 bg-gamer-700 hover:bg-gamer-600 text-slate-300 rounded-lg transition" title="Edit"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="deleteMapping('${m.id}')" class="p-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition" title="Delete"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderKeyboard();
+        }
+
+        // --- Presets Loader ---
+        function loadGamePreset(gameKey) {
+            if (presets[gameKey]) {
+                mappings = JSON.parse(JSON.stringify(presets[gameKey]));
+                renderMappingsTable();
+                showToast(`Loaded ${gameKey.toUpperCase()} pro preset`, 'success');
+                logEvent(`Switched profile to preset: ${gameKey.toUpperCase()}`);
+            }
+        }
+
+        // --- Master Engine Toggle ---
+        function toggleEngine() {
+            isEngineActive = !isEngineActive;
+            const toggleBtn = document.getElementById('masterToggle');
+            const toggleKnob = document.getElementById('toggleKnob');
+            const toggleText = document.getElementById('toggleText');
+            const mobileText = document.getElementById('mobileStatusText');
+            const mobileDot = document.getElementById('mobileStatusIndicator');
+
+            if (isEngineActive) {
+                toggleBtn.className = 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-emerald-500 shadow-inner';
+                toggleKnob.className = 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-6 shadow-sm';
+                toggleText.textContent = 'ACTIVE';
+                toggleText.className = 'text-xs font-semibold text-emerald-400 w-14';
+                mobileText.textContent = 'ACTIVE';
+                mobileText.className = 'text-emerald-400';
+                mobileDot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+                showToast('FPS Keymapper engine online', 'success');
+                logEvent('Engine resumed.');
+            } else {
+                toggleBtn.className = 'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none bg-gamer-600 shadow-inner';
+                toggleKnob.className = 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1 shadow-sm';
+                toggleText.textContent = 'PAUSED';
+                toggleText.className = 'text-xs font-semibold text-slate-400 w-14';
+                mobileText.textContent = 'PAUSED';
+                mobileText.className = 'text-slate-400';
+                mobileDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                showToast('FPS Keymapper engine suspended', 'info');
+                logEvent('Engine paused.');
+            }
+        }
+
+        // --- Rapid Fire Turbo Engine ---
+        function toggleRapidFireEngine() {
+            rapidFireActive = !rapidFireActive;
+            const btn = document.getElementById('rapidFireMaster');
+            const status = document.getElementById('turboStatus');
+
+            if (rapidFireActive) {
+                btn.className = 'bg-emerald-600 text-slate-950 font-bold px-2.5 py-1 rounded-lg text-xs transition border border-emerald-500';
+                btn.textContent = 'TURBO ON';
+                status.className = 'font-bold text-emerald-400 uppercase animate-pulse';
+                status.textContent = `Active (${rapidFireHz} CPS)`;
+                showToast('Rapid-Fire Turbo Engine Armed', 'success');
+                logEvent(`Rapid-Fire turbo started at ${rapidFireHz} CPS.`);
+            } else {
+                btn.className = 'bg-gamer-700 hover:bg-gamer-600 text-slate-200 px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-gamer-600';
+                btn.textContent = 'OFF';
+                status.className = 'font-bold text-slate-500 uppercase';
+                status.textContent = 'Idle';
+                showToast('Rapid-Fire Turbo Disarmed', 'info');
+                logEvent('Rapid-Fire turbo stopped.');
+            }
+        }
+
+        function updateRapidFireRate(val) {
+            rapidFireHz = val;
+            document.getElementById('hzValue').textContent = `${val} CPS`;
+            if (rapidFireActive) {
+                document.getElementById('turboStatus').textContent = `Active (${val} CPS)`;
+            }
+        }
+
+        // --- Global Listeners & FPS Simulation ---
+        function setupGlobalListeners() {
+            const sandbox = document.getElementById('sandboxInput');
+
+            sandbox.addEventListener('keydown', (e) => {
+                if (!isEngineActive) return;
+
+                if (isCapturing) {
+                    e.preventDefault();
+                    const keyStr = e.code;
+                    document.getElementById('inputOriginalKey').value = keyStr;
+                    stopCapturingKey();
+                    showToast(`Captured key: ${keyStr}`, 'success');
+                    return;
+                }
+
+                highlightVirtualKey(e.code, true);
+                document.getElementById('lastKeyText').textContent = e.code;
+
+                const matchedMapping = mappings.find(m => m.enabled && (
+                    m.original.toLowerCase() === e.code.toLowerCase() ||
+                    m.original.toLowerCase() === e.key.toLowerCase()
+                ));
+
+                if (matchedMapping) {
+                    e.preventDefault();
+                    logEvent(`FPS Intercept [${matchedMapping.original}] -> Executing ${matchedMapping.type}: ${matchedMapping.target}`);
+
+                    if (matchedMapping.type === 'key') {
+                        insertIntoSandbox(sandbox, translateKeyCodeToChar(matchedMapping.target));
+                    } else if (matchedMapping.type === 'macro') {
+                        insertIntoSandbox(sandbox, `[CHAT] ${matchedMapping.target}\n`);
+                    } else if (matchedMapping.type === 'bhop') {
+                        insertIntoSandbox(sandbox, `[BHOP/CROUCH SPAM SEQUENCE ACTIVATED]\n`);
+                    } else if (matchedMapping.type === 'rapid') {
+                        insertIntoSandbox(sandbox, `[RAPID FIRE BURST FIRED]\n`);
+                    }
+                }
+            });
+
+            sandbox.addEventListener('keyup', (e) => {
+                highlightVirtualKey(e.code, false);
+            });
+        }
+
+        function highlightVirtualKey(code, isPressed) {
+            const btn = document.getElementById(`vkey-${code}`) || document.getElementById(`mouse-${code}`);
+            if (btn) {
+                if (isPressed) {
+                    btn.classList.add('bg-rose-500/30', 'border-rose-500', 'text-rose-200');
+                } else {
+                    btn.classList.remove('bg-rose-500/30', 'border-rose-500', 'text-rose-200');
+                }
+            }
+        }
+
+        function insertIntoSandbox(textarea, text) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const val = textarea.value;
+            textarea.value = val.substring(0, start) + text + val.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        }
+
+        function translateKeyCodeToChar(code) {
+            if (code === 'Space') return ' ';
+            if (code === 'Enter') return '\n';
+            if (code.startsWith('Key')) return code.replace('Key', '');
+            if (code.startsWith('Digit')) return code.replace('Digit', '');
+            return code;
+        }
+
+        // --- Virtual Key & Mouse Click ---
+        function handleVirtualKeyClick(code) {
+            document.getElementById('inputOriginalKey').value = code;
+            openAddModal();
+            showToast(`Selected input ${code} for binding`, 'info');
+        }
+
+        function resetKeyHighlights() {
+            renderKeyboard();
+            showToast('Hardware HUD highlights reset', 'info');
+        }
+
+        // --- Modal Management ---
+        function openAddModal() {
+            document.getElementById('editMappingId').value = '';
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-bolt text-emerald-400"></i><span>Configure FPS Key Mapping</span>';
+            document.getElementById('mappingForm').reset();
+            document.getElementById('inputActionType').value = 'key';
+            onActionTypeChange();
+
+            const modal = document.getElementById('mappingModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('modalCard').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function editMapping(id) {
+            const m = mappings.find(x => x.id === id);
+            if (!m) return;
+
+            document.getElementById('editMappingId').value = m.id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen text-emerald-400"></i><span>Edit FPS Mapping</span>';
+            document.getElementById('inputOriginalKey').value = m.original;
+            document.getElementById('inputActionType').value = m.type;
+            onActionTypeChange();
+            document.getElementById('inputTargetValue').value = m.target;
+            document.getElementById('inputDescription').value = m.desc || '';
+
+            const modal = document.getElementById('mappingModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('modalCard').classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('mappingModal');
+            modal.classList.add('opacity-0');
+            document.getElementById('modalCard').classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+            stopCapturingKey();
+        }
+
+        function onActionTypeChange() {
+            const type = document.getElementById('inputActionType').value;
+            const targetLabel = document.getElementById('targetLabel');
+            const targetInput = document.getElementById('inputTargetValue');
+
+            if (type === 'key') {
+                targetLabel.textContent = 'Target Key (e.g. KeyE, Space)';
+                targetInput.placeholder = 'e.g. KeyE';
+            } else if (type === 'macro') {
+                targetLabel.textContent = 'Chat / Command Macro';
+                targetInput.placeholder = 'e.g. droppins! / buy awp';
+            } else if (type === 'rapid') {
+                targetLabel.textContent = 'Rapid Fire Target Button';
+                targetInput.placeholder = 'e.g. LeftClick';
+            } else if (type === 'bhop') {
+                targetLabel.textContent = 'Bunny Hop / Crouch Trigger';
+                targetInput.placeholder = 'e.g. Space or KeyC';
+            }
+        }
+
+        function saveMapping(e) {
+            e.preventDefault();
+            const id = document.getElementById('editMappingId').value;
+            const original = document.getElementById('inputOriginalKey').value;
+            const type = document.getElementById('inputActionType').value;
+            const target = document.getElementById('inputTargetValue').value;
+            const desc = document.getElementById('inputDescription').value;
+
+            if (id) {
+                const idx = mappings.findIndex(x => x.id === id);
+                if (idx !== -1) {
+                    mappings[idx] = { ...mappings[idx], original, type, target, desc };
+                }
+                showToast('FPS binding updated successfully', 'success');
+            } else {
+                const newMapping = {
+                    id: Date.now().toString(),
+                    original,
+                    type,
+                    target,
+                    desc,
+                    enabled: true
+                };
+                mappings.push(newMapping);
+                showToast('New FPS binding added', 'success');
+            }
+
+            closeModal();
+            renderMappingsTable();
+            logEvent(`Saved binding: ${original} -> ${target}`);
+        }
+
+        function deleteMapping(id) {
+            mappings = mappings.filter(x => x.id !== id);
+            renderMappingsTable();
+            showToast('Binding removed', 'info');
+            logEvent(`Deleted binding ID: ${id}`);
+        }
+
+        function toggleMappingStatus(id) {
+            const m = mappings.find(x => x.id === id);
+            if (m) {
+                m.enabled = !m.enabled;
+                renderMappingsTable();
+                showToast(`Binding ${m.enabled ? 'enabled' : 'disabled'}`, 'info');
+            }
+        }
+
+        // --- Key Capture Utility ---
+        function startCapturingKey() {
+            isCapturing = true;
+            const btn = document.getElementById('captureBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i><span>Press Key...</span>';
+            btn.classList.add('bg-emerald-600', 'text-slate-950');
+        }
+
+        function stopCapturingKey() {
+            isCapturing = false;
+            const btn = document.getElementById('captureBtn');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-crosshairs"></i><span>Capture</span>';
+                btn.classList.remove('bg-emerald-600', 'text-slate-950');
+            }
+        }
+
+        // --- Import / Export ---
+        function exportProfile() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(mappings, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `apexbind-fps-profile-${Date.now()}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast('FPS profile exported', 'success');
+            logEvent('Exported profile to JSON.');
+        }
+
+        function importProfile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed)) {
+                        mappings = parsed;
+                        renderMappingsTable();
+                        showToast('FPS profile imported', 'success');
+                        logEvent('Imported profile from JSON.');
+                    } else {
+                        showToast('Invalid profile structure', 'error');
+                    }
+                } catch (err) {
+                    showToast('Failed to parse JSON profile', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // --- Utilities & Logging ---
+        function clearSandbox() {
+            document.getElementById('sandboxInput').value = '';
+            showToast('Aim test arena cleared', 'info');
+        }
+
+        function clearLogs() {
+            document.getElementById('eventLogContainer').innerHTML = '<div class="text-slate-600 italic">// Telemetry log cleared...</div>';
+        }
+
+        function logEvent(msg) {
+            const container = document.getElementById('eventLogContainer');
+            const timeStr = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = 'text-slate-300 flex items-start space-x-2';
+            div.innerHTML = `<span class="text-slate-500">[${timeStr}]</span> <span class="text-emerald-400">&gt;</span> <span>${escapeHtml(msg)}</span>`;
+            
+            if (container.querySelector('.italic')) {
+                container.innerHTML = '';
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bg = 'bg-gamer-800 border-emerald-500/30 text-emerald-200';
+            let icon = 'fa-circle-info text-emerald-400';
+            if (type === 'success') {
+                bg = 'bg-gamer-800 border-emerald-500/30 text-emerald-200';
+                icon = 'fa-circle-check text-emerald-400';
+            } else if (type === 'error') {
+                bg = 'bg-gamer-800 border-rose-500/30 text-rose-200';
+                icon = 'fa-circle-exclamation text-rose-400';
+            }
+
+            toast.className = `${bg} border px-4 py-3 rounded-xl shadow-xl text-xs font-medium flex items-center space-x-2.5 transform translate-y-2 opacity-0 transition-all duration-300 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i><span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
 </body>
 </html>
